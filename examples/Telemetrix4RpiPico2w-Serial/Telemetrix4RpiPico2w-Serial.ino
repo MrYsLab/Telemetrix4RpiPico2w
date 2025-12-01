@@ -1796,6 +1796,10 @@ void get_pico_unique_id() {
   unique_id_report_report_message[5] = (board_id.id[3]);
   unique_id_report_report_message[6] = (board_id.id[4]);
   unique_id_report_report_message[7] = (board_id.id[5]);
+  unique_id_report_report_message[8] = (board_id.id[6]);
+  unique_id_report_report_message[9] = (board_id.id[7]);
+
+
 
   Serial.write(unique_id_report_report_message, 10);
 }
