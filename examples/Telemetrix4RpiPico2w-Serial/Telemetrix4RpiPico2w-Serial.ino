@@ -1655,8 +1655,8 @@ void scan_cpu_temp() {
         report_message[3] = output[1];
         report_message[4] = output[2];
         report_message[5] = output[3];
+
         Serial.write(report_message, 6);
-        delay(1);
       }
     }
   }
