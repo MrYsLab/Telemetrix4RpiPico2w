@@ -402,8 +402,8 @@ bool rebooting = false;
 #define DHT_READ_ERROR 1
 
 // firmware version - update this when bumping the version
-#define FIRMWARE_MAJOR 2
-#define FIRMWARE_MINOR 2
+#define FIRMWARE_MAJOR 1
+#define FIRMWARE_MINOR 0
 #define TRANSPORT_TYPE 0  // this is fixed and should not be changes
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
