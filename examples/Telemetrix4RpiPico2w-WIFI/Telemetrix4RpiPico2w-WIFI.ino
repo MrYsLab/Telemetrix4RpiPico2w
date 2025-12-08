@@ -109,6 +109,8 @@ WiFiServer wifiServer(PORT);
 #define PWM_FREQ 59
 #define PWM_RANGE 60
 #define GET_CPU_TEMP 61
+#define RETRIEVE_PICO_UNIQUE_ID 62
+
 
 /* Command Forward References*/
 
@@ -243,6 +245,8 @@ extern void set_pwm_range();
 
 extern void get_cpu_temp();
 
+extern void get_pico_unique_id();
+
 // When adding a new command update the command_table.
 // Every command received begins with a length byte.
 // The command length is the number of bytes that follow
@@ -321,6 +325,8 @@ command_descriptor command_table[] = {
   { set_pwm_freq },
   { set_pwm_range },
   { get_cpu_temp },
+  { get_pico_unique_id },
+
 };
 
 // maximum length of a command in bytes
@@ -356,6 +362,8 @@ WiFiClient client;
 #define STEPPER_RUNNING_REPORT 18
 #define STEPPER_RUN_COMPLETE_REPORT 19
 #define CPU_TEMP_REPORT 20
+#define UNIQUE_ID_REPORT RETRIEVE_PICO_UNIQUE_ID
+
 #define DEBUG_PRINT 99
 
 // A buffer to hold i2c report data
@@ -1794,6 +1802,28 @@ void scan_dhts() {
       }
     }
   }
+}
+
+void get_pico_unique_id() {
+
+  byte unique_id_report_report_message[10] = { 9, UNIQUE_ID_REPORT,
+                                               0, 0, 0, 0, 0, 0, 0, 0 };
+
+  pico_unique_board_id_t board_id;
+  pico_get_unique_board_id(&board_id);
+
+  unique_id_report_report_message[2] = (board_id.id[0]);
+  unique_id_report_report_message[3] = (board_id.id[1]);
+  unique_id_report_report_message[4] = (board_id.id[2]);
+  unique_id_report_report_message[5] = (board_id.id[3]);
+  unique_id_report_report_message[6] = (board_id.id[4]);
+  unique_id_report_report_message[7] = (board_id.id[5]);
+  unique_id_report_report_message[8] = (board_id.id[6]);
+  unique_id_report_report_message[9] = (board_id.id[7]);
+
+
+
+  client.write(unique_id_report_report_message, 10);
 }
 
 
