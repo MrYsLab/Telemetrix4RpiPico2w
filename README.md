@@ -1,2 +1,3 @@
 # Telemetrix4RPiPico2W
-UNDER CONSTRUCTION
+
+The Telemetrix Raspberry Pi Pico 2W Servers. 
