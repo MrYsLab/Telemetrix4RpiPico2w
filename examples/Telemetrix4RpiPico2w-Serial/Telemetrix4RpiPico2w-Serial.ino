@@ -99,6 +99,11 @@
 #define PWM_RANGE 60
 #define GET_CPU_TEMP 61
 #define RETRIEVE_PICO_UNIQUE_ID 62
+#define INIT_NEOPIXELS_RGBW63
+#define SHOW_NEOPIXELS_RGBW 64
+#define SET_NEOPIXEL_RGBW 65
+#define CLEAR_NEOPIXELS_RGBW 66
+#define FILL_NEOPIXELS_RGBW 67
 
 
 /* Command Forward References*/
@@ -226,6 +231,16 @@ extern void clear_all_neo_pixels();
 
 extern void fill_neo_pixels();
 
+extern void init_neo_pixels_rgb();
+
+extern void show_neo_pixels_rgb();
+
+extern void set_neo_pixel_rgb();
+
+extern void clear_all_neo_pixels_rgb();
+
+extern void fill_neo_pixels_rgb();
+
 extern void reset_board();
 
 extern void set_pwm_freq();
@@ -315,6 +330,11 @@ command_descriptor command_table[] = {
   { set_pwm_range },
   { get_cpu_temp },
   { get_pico_unique_id },
+  { init_neo_pixels_rgbw},
+  { show_neo_pixels_rgbw },
+  { set_neo_pixel_rgbw },
+  { clear_all_neo_pixels_rgbw },
+  { fill_neo_pixels_rgbw },
 };
 
 // maximum length of a command in bytes
@@ -501,6 +521,7 @@ uint8_t sonar_scan_interval = 33;  // Milliseconds between sensor pings
 // #define READ_IN_FAILED_IN_SETUP 1 // read request failed when initially setting up
 
 NeoPixelConnect *np;
+NioPixelConnectRGBW *np_rgbw
 
 
 struct DHT {
