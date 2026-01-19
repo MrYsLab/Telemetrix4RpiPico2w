@@ -1465,8 +1465,6 @@ void get_next_command() {
   byte packet_length;
   command_descriptor command_entry;
 
-  bleTransport.update();
-
   // clear the command buffer
   memset(command_buffer, 0, sizeof(command_buffer));
 
