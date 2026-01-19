@@ -1,6 +1,11 @@
+
+
 # Project: Telemtrix4RpiPico2w-BLE
 
 ## Description
+You generated the code now located at https://github.com/MrYsLab/Telemetrix4RpiPico2w/tree/ble/examples/Telemetrix4RpiPico2w-BLE
+I am getting the following errors from the Arduino IDE.
+
 Add a third server for [Telemtrix4RpiPico2w](https://github.com/MrYsLab/Telemetrix4RpiPico2w)
 that uses BLE Nordic UART Service as a transport. The name of
 this new server is Telemetrix4RpiPico2w-BLE.
