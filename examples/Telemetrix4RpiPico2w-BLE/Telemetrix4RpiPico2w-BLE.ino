@@ -25,6 +25,10 @@
 //#include <OneWire.h> // library is not available for the pico
 #include <AccelStepper.h>
 #include <NeoPixelConnect.h>
+#include "BLE_Transport.h"
+
+// Create global instance
+BLE_Transport bleTransport;
 
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
@@ -555,13 +559,13 @@ void send_debug_info(byte id, int value) {
   debug_buffer[2] = id;
   debug_buffer[3] = highByte(value);
   debug_buffer[4] = lowByte(value);
-  Serial.write(debug_buffer, 5);
+  bleTransport.write(debug_buffer, 5);
 }
 
 // a function to loop back data over the serial port
 void serial_loopback() {
   byte loop_back_buffer[3] = { 2, (byte)SERIAL_LOOP_BACK, command_buffer[0] };
-  Serial.write(loop_back_buffer, 3);
+  bleTransport.write(loop_back_buffer, 3);
 }
 
 void set_pin_mode()
@@ -714,7 +718,7 @@ void modify_reporting() {
 
 void reset_board() {
   stop_all_reports();
-  Serial.flush();
+  bleTransport.flush();
   delay(100);
   rebooting = true;
   rp2040.reboot();
@@ -724,7 +728,7 @@ void reset_board() {
 void get_firmware_version() {
   byte report_message[5] = { 4, FIRMWARE_REPORT, FIRMWARE_MAJOR, FIRMWARE_MINOR,
                              TRANSPORT_TYPE };
-  Serial.write(report_message, 5);
+  bleTransport.write(report_message, 5);
 }
 
 /***************************************************
@@ -762,7 +766,7 @@ void servo_attach() {
   } else {
     // no open servos available, send a report back to client
     byte report_message[2] = { SERVO_UNAVAILABLE, pin };
-    Serial.write(report_message, 2);
+    bleTransport.write(report_message, 2);
   }
 }
 
@@ -850,11 +854,11 @@ void i2c_read() {
   // check to be sure correct number of bytes were returned by slave
   if (num_of_bytes < current_i2c_port->available()) {
     byte report_message[4] = { 3, I2C_TOO_MANY_BYTES_RCVD, 1, address };
-    Serial.write(report_message, 4);
+    bleTransport.write(report_message, 4);
     return;
   } else if (num_of_bytes > current_i2c_port->available()) {
     byte report_message[4] = { 3, I2C_TOO_FEW_BYTES_RCVD, 1, address };
-    Serial.write(report_message, 4);
+    bleTransport.write(report_message, 4);
     return;
   }
 
@@ -883,7 +887,7 @@ void i2c_read() {
   // send slave address, register and received bytes
 
   for (int i = 0; i < message_size + 6; i++) {
-    Serial.write(i2c_report_message[i]);
+    bleTransport.write(i2c_report_message[i]);
   }
 }
 
@@ -1076,7 +1080,7 @@ void read_blocking_spi() {
   digitalWrite(chipSelect, LOW);
   current_spi_port->endTransaction();
 
-  Serial.write(spi_report_message, number_of_bytes + 6);
+  bleTransport.write(spi_report_message, number_of_bytes + 6);
 }
 
 void set_format_spi() {
@@ -1104,7 +1108,7 @@ void onewire_reset() {
   //uint8_t reset_return = ow->reset();
   //uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_RESET, reset_return};
 
-  //Serial.write(onewire_report_message, 4);
+  //bleTransport.write(onewire_report_message, 4);
 }
 
 // send a OneWire select
@@ -1142,7 +1146,7 @@ void onewire_read() {
 
   //uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_READ, data};
 
-  //Serial.write(onewire_report_message, 4);
+  //bleTransport.write(onewire_report_message, 4);
 }
 
 // Send a OneWire reset search command
@@ -1160,7 +1164,7 @@ void onewire_search() {
   //                                   };
 
   //ow->search(&onewire_report_message[3]);
-  //Serial.write(onewire_report_message, 11);
+  //bleTransport.write(onewire_report_message, 11);
 }
 
 // Calculate a OneWire CRC8 on a buffer containing a specified number of bytes
@@ -1168,7 +1172,7 @@ void onewire_crc8() {
 
   //uint8_t crc = ow->crc8(&command_buffer[1], command_buffer[0]);
   //uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_CRC8, crc};
-  //Serial.write(onewire_report_message, 4);
+  //bleTransport.write(onewire_report_message, 4);
 }
 
 // Stepper Motor supported
@@ -1318,7 +1322,7 @@ void stepper_get_distance_to_go() {
   report_message[6] = (byte)((dtg & 0x000000FF));
 
   // motor_id = command_buffer[0]
-  Serial.write(report_message, 7);
+  bleTransport.write(report_message, 7);
 }
 
 void stepper_get_target_position() {
@@ -1339,7 +1343,7 @@ void stepper_get_target_position() {
   report_message[6] = (byte)((target & 0x000000FF));
 
   // motor_id = command_buffer[0]
-  Serial.write(report_message, 7);
+  bleTransport.write(report_message, 7);
 }
 
 void stepper_get_current_position() {
@@ -1360,7 +1364,7 @@ void stepper_get_current_position() {
   report_message[6] = (byte)((position & 0x000000FF));
 
   // motor_id = command_buffer[0]
-  Serial.write(report_message, 7);
+  bleTransport.write(report_message, 7);
 }
 
 void stepper_set_current_position() {
@@ -1437,7 +1441,7 @@ void stepper_is_running() {
 
   report_message[3] = steppers[command_buffer[0]]->isRunning();
 
-  Serial.write(report_message, 4);
+  bleTransport.write(report_message, 4);
 }
 
 // stop all reports from being generated
@@ -1445,12 +1449,12 @@ void stepper_is_running() {
 void stop_all_reports() {
   stop_reports = true;
   delay(20);
-  Serial.flush();
+  bleTransport.flush();
 }
 
 // enable all reports to be generated
 void enable_all_reports() {
-  Serial.flush();
+  bleTransport.flush();
   stop_reports = false;
   delay(20);
 }
@@ -1461,22 +1465,24 @@ void get_next_command() {
   byte packet_length;
   command_descriptor command_entry;
 
+  bleTransport.update();
+
   // clear the command buffer
   memset(command_buffer, 0, sizeof(command_buffer));
 
   // if there is no command waiting, then return
-  if (not Serial.available()) {
+  if (not bleTransport.available()) {
     return;
   }
   // get the packet length
-  packet_length = (byte)Serial.read();
+  packet_length = (byte)bleTransport.read();
 
-  while (not Serial.available()) {
+  while (not bleTransport.available()) {
     delay(1);
   }
 
   // get the command byte
-  command = (byte)Serial.read();
+  command = (byte)bleTransport.read();
 
 
   // uncomment the next line to see the packet length and command
@@ -1487,10 +1493,10 @@ void get_next_command() {
     // get the data for that command
     for (int i = 0; i < packet_length - 1; i++) {
       // need this delay or data read is not correct
-      while (not Serial.available()) {
+      while (not bleTransport.available()) {
         delay(1);
       }
-      command_buffer[i] = (byte)Serial.read();
+      command_buffer[i] = (byte)bleTransport.read();
       // uncomment out to see each of the bytes following the command
       // send_debug_info(i, command_buffer[i]);
     }
@@ -1579,7 +1585,7 @@ void scan_digital_inputs() {
           the_digital_pins[i].last_value = value;
           report_message[2] = (byte)i;
           report_message[3] = value;
-          Serial.write(report_message, 4);
+          bleTransport.write(report_message, 4);
         }
       }
     }
@@ -1624,7 +1630,7 @@ void scan_analog_inputs() {
             report_message[2] = (byte)i;
             report_message[3] = highByte(value);  // get high order byte
             report_message[4] = lowByte(value);
-            Serial.write(report_message, 5);
+            bleTransport.write(report_message, 5);
             delay(1);
           }
         }
@@ -1656,7 +1662,7 @@ void scan_cpu_temp() {
         report_message[4] = output[2];
         report_message[5] = output[3];
 
-        Serial.write(report_message, 6);
+        bleTransport.write(report_message, 6);
       }
     }
   }
@@ -1689,7 +1695,7 @@ void scan_sonars() {
           frac = (uint8_t)f;
           byte report_message[5] = { 4, SONAR_DISTANCE, sonars[last_sonar_visited].trigger_pin,
                                      integ, frac };
-          Serial.write(report_message, 5);
+          bleTransport.write(report_message, 5);
         }
         last_sonar_visited++;
         if (last_sonar_visited == sonars_index) {
@@ -1749,7 +1755,7 @@ void scan_dhts() {
 
         // if rv is not zero, this is an error report
         if (rv) {
-          Serial.write(report_message, 10);
+          bleTransport.write(report_message, 10);
           return;
         } else {
           float j, f;
@@ -1775,7 +1781,7 @@ void scan_dhts() {
 
           report_message[8] = (uint8_t)j;
           report_message[9] = (uint8_t)(f * 100);
-          Serial.write(report_message, 10);
+          bleTransport.write(report_message, 10);
         }
       }
     }
@@ -1801,7 +1807,7 @@ void get_pico_unique_id() {
 
 
 
-  Serial.write(unique_id_report_report_message, 10);
+  bleTransport.write(unique_id_report_report_message, 10);
 }
 
 
@@ -1822,7 +1828,7 @@ void run_steppers() {
           running = steppers[i]->isRunning();
           if (!running) {
             byte report_message[3] = { 2, STEPPER_RUN_COMPLETE_REPORT, (byte)i };
-            Serial.write(report_message, 3);
+            bleTransport.write(report_message, 3);
             stepper_run_modes[i] = STEPPER_STOP;
           }
           break;
@@ -1834,7 +1840,7 @@ void run_steppers() {
           target_position = steppers[i]->targetPosition();
           if (target_position == steppers[i]->currentPosition()) {
             byte report_message[3] = { 2, STEPPER_RUN_COMPLETE_REPORT, (byte)i };
-            Serial.write(report_message, 3);
+            bleTransport.write(report_message, 3);
             stepper_run_modes[i] = STEPPER_STOP;
           }
           break;
@@ -1850,7 +1856,8 @@ void run_steppers() {
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 void setup() {
-  Serial.begin(115200);
+    bleTransport.begin("Telemetrix4Pico2W");
+    delay(1000);  // Allow BLE to initialize
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -1886,6 +1893,7 @@ void loop() {
 
   if (!rebooting) {
     // keep processing incoming commands
+
     get_next_command();
 
     if (!stop_reports) {
