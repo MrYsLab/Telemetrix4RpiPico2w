@@ -34,18 +34,15 @@ static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
 static bool notifications_enabled = false;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-// Advertising data - includes name
-static const uint8_t adv_data[] = {
-    0x02, 0x01, 0x06,  // Flags: General Discoverable, BR/EDR not supported
-    0x10, 0x09, 'T', 'e', 'l', 'e', 'm', 'e', 't', 'r', 'i', 'x', '-', 'P', 'i', 'c', 'o',  // Complete name
-    0x11, 0x07,        // 128-bit Service UUID list
-    0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0,
-    0x93, 0xF3, 0xA3, 0xB5, 0x01, 0x00, 0x40, 0x6E,
-};
+// Calculate device name length at compile time
+#define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
-static const uint8_t scan_resp_data[] = {
-    0x10, 0x09, 'T', 'e', 'l', 'e', 'm', 'e', 't', 'r', 'i', 'x', '-', 'P', 'i', 'c', 'o'
-};
+// Advertising data - dynamically built in setup()
+static uint8_t adv_data[128];
+static uint8_t adv_data_len = 0;
+
+static uint8_t scan_resp_data[128];
+static uint8_t scan_resp_data_len = 0;
 
 // ATT Database
 static const uint8_t profile_data[] = {
@@ -59,6 +56,7 @@ static const uint8_t profile_data[] = {
     0x0d, 0x00, 0x02, 0x00, 0x02, 0x00, 0x03, 0x28, 0x02, 0x03, 0x00, 0x00, 0x2a,
 
     // 0x0003 VALUE-GAP_DEVICE_NAME
+    // Note: This will be updated dynamically in setup() to match DEVICE_NAME
     0x1d, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00, 0x2a,
     'T', 'e', 'l', 'e', 'm', 'e', 't', 'r', 'i', 'x', '-', 'P', 'i', 'c', 'o',
 
@@ -211,6 +209,41 @@ void setup() {
     Serial.println("  Nordic UART Service (NUS)");
     Serial.println("=============================================\n");
 
+    // Build advertising data dynamically based on DEVICE_NAME
+    uint8_t pos = 0;
+
+    // Flags
+    adv_data[pos++] = 0x02;
+    adv_data[pos++] = 0x01;
+    adv_data[pos++] = 0x06;
+
+    // Complete Local Name
+    adv_data[pos++] = 1 + DEVICE_NAME_LEN;  // Length
+    adv_data[pos++] = 0x09;                  // Type: Complete Local Name
+    memcpy(&adv_data[pos], DEVICE_NAME, DEVICE_NAME_LEN);
+    pos += DEVICE_NAME_LEN;
+
+    // 128-bit Service UUID
+    adv_data[pos++] = 0x11;  // Length
+    adv_data[pos++] = 0x07;  // Type: Complete 128-bit UUID
+    memcpy(&adv_data[pos], nus_service_uuid, 16);
+    pos += 16;
+
+    adv_data_len = pos;
+
+    // Build scan response data
+    pos = 0;
+    scan_resp_data[pos++] = 1 + DEVICE_NAME_LEN;
+    scan_resp_data[pos++] = 0x09;
+    memcpy(&scan_resp_data[pos], DEVICE_NAME, DEVICE_NAME_LEN);
+    pos += DEVICE_NAME_LEN;
+    scan_resp_data_len = pos;
+
+    Serial.print("Device Name: ");
+    Serial.println(DEVICE_NAME);
+    Serial.print("Name Length: ");
+    Serial.println(DEVICE_NAME_LEN);
+
     // Initialize L2CAP
     l2cap_init();
     Serial.println("L2CAP initialized");
@@ -245,8 +278,8 @@ void setup() {
     );
 
     // Set advertising data
-    gap_advertisements_set_data(sizeof(adv_data), (uint8_t*)adv_data);
-    gap_scan_response_set_data(sizeof(scan_resp_data), (uint8_t*)scan_resp_data);
+    gap_advertisements_set_data(adv_data_len, adv_data);
+    gap_scan_response_set_data(scan_resp_data_len, scan_resp_data);
     Serial.println("Advertising data configured");
 
     // Power on Bluetooth
