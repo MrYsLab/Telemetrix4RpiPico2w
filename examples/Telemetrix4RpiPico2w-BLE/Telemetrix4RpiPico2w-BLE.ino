@@ -1854,7 +1854,7 @@ void run_steppers() {
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 void setup() {
-    bleTransport.begin("abc");
+    bleTransport.begin("Tmx4Pico2W");
     delay(1000);  // Allow BLE to initialize
 
   pinMode(LED_BUILTIN, OUTPUT);
