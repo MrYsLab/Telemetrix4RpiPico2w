@@ -1854,7 +1854,7 @@ void run_steppers() {
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 void setup() {
-    bleTransport.begin("Telemetrix4Pico2W");
+    bleTransport.begin("abc");
     delay(1000);  // Allow BLE to initialize
 
   pinMode(LED_BUILTIN, OUTPUT);

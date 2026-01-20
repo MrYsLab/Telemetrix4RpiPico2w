@@ -1,57 +1,99 @@
 /*
- * BLE_Transport.h - BLE Nordic UART Service transport for Telemetrix4RpiPico2w
- * Based on working BLE NUS implementation
+ * BLE_Transport.h
+ * Telemetrix4RpiPico2w - BLE Nordic UART Service Transport
  *
- * IMPORTANT: Tools->IP/Bluetooth Stack = "IPv4 + Bluetooth"
+ * This class implements BLE Nordic UART Service (NUS) transport for Telemetrix
+ * using the BTStack library provided by arduino-pico
  */
 
 #ifndef BLE_TRANSPORT_H
 #define BLE_TRANSPORT_H
 
 #include <Arduino.h>
+#include <btstack.h>
 
-extern "C" {
-    #include "btstack.h"
-}
+// Default device name for advertising
+#define DEFAULT_DEVICE_NAME "Tmx4Pico2W"
 
+// Maximum MTU size for BLE
+#define MAX_MTU_SIZE 512
 #define RX_BUFFER_SIZE 512
+#define TX_BUFFER_SIZE 512
 
 class BLE_Transport {
-private:
-    // Circular buffer for received data
-    static uint8_t rx_buffer[RX_BUFFER_SIZE];
-    static volatile uint16_t rx_head;
-    static volatile uint16_t rx_tail;
-
-    // Connection state
-    static hci_con_handle_t con_handle;
-    static bool notifications_enabled;
-    static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-    // Callbacks
-    static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle,
-                                  uint16_t transaction_mode, uint16_t offset,
-                                  uint8_t *buffer, uint16_t buffer_size);
-    static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle,
-                                      uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
-    static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
 public:
     BLE_Transport();
 
-    void begin(const char* deviceName = "Telemetrix4Pico");
-    void end();
+    // Initialize BLE transport with optional custom device name
+    bool begin(const char* deviceName = DEFAULT_DEVICE_NAME);
 
-    // Stream-like interface for compatibility with Telemetrix
+    // Check if a client is connected
+    bool isConnected();
+
+    // Read data from BLE (non-blocking)
     int available();
     int read();
-    int peek();
+    size_t read(uint8_t* buffer, size_t size);
 
-    size_t write(uint8_t byte);
-    size_t write(const uint8_t *buffer, size_t size);
+    // Write data to BLE
+    size_t write(uint8_t data);
+    size_t write(const uint8_t* buffer, size_t size);
+
+    // Flush any pending data
     void flush();
 
-    bool isConnected() { return con_handle != HCI_CON_HANDLE_INVALID; }
+    // Set the device name for advertising
+    void setDeviceName(const char* name);
+
+    // Get current device name
+    const char* getDeviceName();
+
+    // Static instance pointer for callbacks
+    static BLE_Transport* instance;
+
+    // Public callback methods (called from global C callbacks)
+    uint16_t attReadCallback(hci_con_handle_t conHandle, uint16_t attHandle, uint16_t offset, uint8_t* buffer, uint16_t bufferSize);
+    int attWriteCallback(hci_con_handle_t conHandle, uint16_t attHandle, uint16_t transactionMode, uint16_t offset, uint8_t* buffer, uint16_t bufferSize);
+
+private:
+    // BLE connection handle
+    hci_con_handle_t conHandle;
+
+    // Characteristic value handles
+    uint16_t rxCharValueHandle;
+    uint16_t txCharValueHandle;
+    uint16_t txCharCCCDHandle;
+
+    // Connection state
+    bool connected;
+    bool txNotifyEnabled;
+
+    // Device name
+    char deviceName[32];
+
+    // Buffers for RX and TX
+    uint8_t rxBuffer[RX_BUFFER_SIZE];
+    uint16_t rxHead;
+    uint16_t rxTail;
+
+    uint8_t txBuffer[TX_BUFFER_SIZE];
+    uint16_t txHead;
+    uint16_t txTail;
+
+    // MTU size
+    uint16_t mtuSize;
+
+    // Static callback for BTStack
+    static void packetHandler(uint8_t packetType, uint16_t channel, uint8_t* packet, uint16_t size);
+
+    // Helper methods
+    void handleHCIEvent(uint8_t* packet, uint16_t size);
+    void handleATTEvent(uint8_t* packet, uint16_t size);
+    void sendNotification();
+    uint16_t rxBufferAvailable();
+    uint16_t txBufferAvailable();
+    void addToRxBuffer(uint8_t data);
+    void addToRxBuffer(const uint8_t* data, uint16_t len);
 };
 
 #endif // BLE_TRANSPORT_H
