@@ -27,7 +27,7 @@ static const uint8_t nus_tx_uuid[] = {
     0x93, 0xF3, 0xA3, 0xB5, 0x03, 0x00, 0x40, 0x6E
 };
 
-#define DEVICE_NAME "Telemetrix-Pico"
+#define DEVICE_NAME "Tmx4Pico2W"
 
 // Connection state
 static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
