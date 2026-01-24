@@ -1,9 +1,15 @@
 /*
  * BLE Nordic UART Service for Telemetrix4RpiPico2w
- * Based on working example - Fixed for advertising
+ * Based on working example - User can set device name
  *
  * IMPORTANT: Tools->IP/Bluetooth Stack = "IPv4 + Bluetooth"
  */
+
+// ============================================================
+// USER CONFIGURABLE - Change this to set your device name
+// ============================================================
+#define BLE_DEVICE_NAME "Tmx4Pico2"
+// ============================================================
 
 extern "C" {
   #include "btstack.h"
@@ -27,15 +33,10 @@ static const uint8_t nus_tx_uuid[] = {
     0x93, 0xF3, 0xA3, 0xB5, 0x03, 0x00, 0x40, 0x6E
 };
 
-#define DEVICE_NAME "Tmx4Pico2W"
-
 // Connection state
 static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
 static bool notifications_enabled = false;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-// Calculate device name length at compile time
-#define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
 // Advertising data - dynamically built in setup()
 static uint8_t adv_data[128];
@@ -44,8 +45,8 @@ static uint8_t adv_data_len = 0;
 static uint8_t scan_resp_data[128];
 static uint8_t scan_resp_data_len = 0;
 
-// ATT Database
-static const uint8_t profile_data[] = {
+// ATT Database - dynamically updated with device name
+static uint8_t profile_data[] = {
     // ATT DB Version
     1,
 
@@ -56,9 +57,10 @@ static const uint8_t profile_data[] = {
     0x0d, 0x00, 0x02, 0x00, 0x02, 0x00, 0x03, 0x28, 0x02, 0x03, 0x00, 0x00, 0x2a,
 
     // 0x0003 VALUE-GAP_DEVICE_NAME
-    // Note: This will be updated dynamically in setup() to match DEVICE_NAME
-    0x1d, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00, 0x2a,
-    'T', 'e', 'l', 'e', 'm', 'e', 't', 'r', 'i', 'x', '-', 'P', 'i', 'c', 'o',
+    // NOTE: Size will be updated in setup() based on actual device name length
+    0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00, 0x2a,
+    // Device name will be inserted here (up to 20 bytes reserved)
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 
     // 0x0004 PRIMARY_SERVICE-GATT_SERVICE
     0x0a, 0x00, 0x02, 0x00, 0x04, 0x00, 0x00, 0x28, 0x01, 0x18,
@@ -166,7 +168,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 Serial.println("*** Starting Advertising ***");
                 gap_advertisements_enable(1);
                 Serial.println("*** ADVERTISING NOW! ***\n");
-                Serial.println("Look for '" DEVICE_NAME "' in nRF Connect or BLE scanner");
+                Serial.print("Look for '");
+                Serial.print(BLE_DEVICE_NAME);
+                Serial.println("' in nRF Connect or BLE scanner");
             }
             break;
 
@@ -209,7 +213,21 @@ void setup() {
     Serial.println("  Nordic UART Service (NUS)");
     Serial.println("=============================================\n");
 
-    // Build advertising data dynamically based on DEVICE_NAME
+    // Update ATT database with device name
+    // The device name field starts at offset 23 in profile_data
+    // First, update the length byte at offset 21 (total length of this ATT entry)
+    uint8_t name_len = strlen(BLE_DEVICE_NAME);
+    profile_data[21] = 8 + name_len;  // 8 bytes header + name length
+
+    // Copy device name into profile_data at offset 23
+    memcpy(&profile_data[23], BLE_DEVICE_NAME, name_len);
+
+    Serial.print("Device Name: ");
+    Serial.println(BLE_DEVICE_NAME);
+    Serial.print("Name Length: ");
+    Serial.println(name_len);
+
+    // Build advertising data - Service UUID only (more reliable)
     uint8_t pos = 0;
 
     // Flags
@@ -217,32 +235,21 @@ void setup() {
     adv_data[pos++] = 0x01;
     adv_data[pos++] = 0x06;
 
-    // Complete Local Name
-    adv_data[pos++] = 1 + DEVICE_NAME_LEN;  // Length
-    adv_data[pos++] = 0x09;                  // Type: Complete Local Name
-    memcpy(&adv_data[pos], DEVICE_NAME, DEVICE_NAME_LEN);
-    pos += DEVICE_NAME_LEN;
-
-    // 128-bit Service UUID
-    adv_data[pos++] = 0x11;  // Length
+    // 128-bit Service UUID (CRITICAL - must be in advertising data)
+    adv_data[pos++] = 0x11;  // Length: 17 bytes
     adv_data[pos++] = 0x07;  // Type: Complete 128-bit UUID
     memcpy(&adv_data[pos], nus_service_uuid, 16);
     pos += 16;
 
     adv_data_len = pos;
 
-    // Build scan response data
+    // Build scan response data - Device name goes here
     pos = 0;
-    scan_resp_data[pos++] = 1 + DEVICE_NAME_LEN;
-    scan_resp_data[pos++] = 0x09;
-    memcpy(&scan_resp_data[pos], DEVICE_NAME, DEVICE_NAME_LEN);
-    pos += DEVICE_NAME_LEN;
+    scan_resp_data[pos++] = 1 + name_len;
+    scan_resp_data[pos++] = 0x09;  // Type: Complete Local Name
+    memcpy(&scan_resp_data[pos], BLE_DEVICE_NAME, name_len);
+    pos += name_len;
     scan_resp_data_len = pos;
-
-    Serial.print("Device Name: ");
-    Serial.println(DEVICE_NAME);
-    Serial.print("Name Length: ");
-    Serial.println(DEVICE_NAME_LEN);
 
     // Initialize L2CAP
     l2cap_init();
@@ -282,8 +289,16 @@ void setup() {
     gap_scan_response_set_data(scan_resp_data_len, scan_resp_data);
     Serial.println("Advertising data configured");
 
+    // Print advertising data for debugging
+    Serial.println("\nAdvertising data (HEX):");
+    for(int i = 0; i < adv_data_len; i++) {
+        Serial.printf("%02X ", adv_data[i]);
+        if ((i + 1) % 16 == 0) Serial.println();
+    }
+    Serial.println("\n");
+
     // Power on Bluetooth
-    Serial.println("\nPowering on Bluetooth...");
+    Serial.println("Powering on Bluetooth...");
     hci_power_control(HCI_POWER_ON);
 
     Serial.println("\nSetup complete - waiting for BTstack to initialize...");
