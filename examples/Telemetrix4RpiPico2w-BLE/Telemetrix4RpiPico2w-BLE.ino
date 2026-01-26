@@ -22,8 +22,6 @@
 #define BLE_DEVICE_NAME "Tmx4Pico2W"
 // ============================================================
 
-
-}
 #include <Arduino.h>
 #include "Telemetrix4RpiPico2w.h"
 #include <Servo.h>
@@ -408,7 +406,7 @@ bool rebooting = false;
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 1
 #define FIRMWARE_MINOR 0
-#define TRANSPORT_TYPE 0  // this is fixed and should not be changes
+#define TRANSPORT_TYPE 1  // 0=Serial, 1=BLE
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*           Pin Related Defines And Data Structures                */
@@ -676,7 +674,7 @@ void get_cpu_temp() {
 
   memcpy(&cpu_temp_threshold, &command_buffer[0], sizeof(float));
 
-  uint16_t cpu_temp_sampling_interval = (command_buffer[4] << 8) + command_buffer[5];
+  cpu_temp_sampling_interval = (command_buffer[4] << 8) + command_buffer[5];
 
   monitor_cpu_temp = true;
 }
@@ -726,7 +724,7 @@ void modify_reporting() {
 
 void reset_board() {
   stop_all_reports();
-  Serial.flush();
+  bleTransport.flush();
   delay(100);
   rebooting = true;
   rp2040.reboot();
@@ -899,7 +897,6 @@ void i2c_read() {
   }
 }
 
-// write a specified number of bytes to an i2c device
 void i2c_write() {
   // command_buffer[0] = i2c port
   // command_buffer[1] is the device address
@@ -1457,12 +1454,12 @@ void stepper_is_running() {
 void stop_all_reports() {
   stop_reports = true;
   delay(20);
-  Serial.flush();
+  bleTransport.flush();
 }
 
 // enable all reports to be generated
 void enable_all_reports() {
-  Serial.flush();
+  bleTransport.flush();
   stop_reports = false;
   delay(20);
 }
@@ -1477,14 +1474,13 @@ void get_next_command() {
   memset(command_buffer, 0, sizeof(command_buffer));
 
   // if there is no command waiting, then return
-  if (!bleTransport.available()) {
+  if (not bleTransport.available()) {
     return;
   }
-
   // get the packet length
-  packet_length = (byte)Serial.read();
+  packet_length = (byte)bleTransport.read();
 
-  while (not Serial.available()) {
+  while (not bleTransport.available()) {
     delay(1);
   }
 
@@ -1500,7 +1496,7 @@ void get_next_command() {
     // get the data for that command
     for (int i = 0; i < packet_length - 1; i++) {
       // need this delay or data read is not correct
-      while (not Serial.available()) {
+      while (not bleTransport.available()) {
         delay(1);
       }
       command_buffer[i] = (byte)bleTransport.read();
@@ -1864,10 +1860,6 @@ void run_steppers() {
 
 void setup() {
   Serial.begin(115200);
-
-  // Initialize BLE transport
-  init_ble_transport();
-  delay(1000);
 
   pinMode(LED_BUILTIN, OUTPUT);
 

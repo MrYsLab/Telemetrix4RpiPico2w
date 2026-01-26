@@ -2,18 +2,14 @@
  * BLE_Transport.h
  * BLE Nordic UART Service wrapper for Telemetrix4RpiPico2w
  *
- * This file provides drop-in replacements for Serial functions
- * to enable BLE transport with minimal changes to existing code
+ * This implementation uses BTstack's low-level C API to create a GATT server
+ * with Nordic UART Service for BLE communication
  */
-extern "C" {
-  #include "btstack.h"
-
 
 #ifndef BLE_TRANSPORT_H
 #define BLE_TRANSPORT_H
 
 #include <Arduino.h>
-#include <BTstackLib.h>
 
 class BLE_Transport {
 private:
@@ -23,86 +19,36 @@ private:
     volatile uint16_t rxHead;
     volatile uint16_t rxTail;
 
-    // BLE characteristics
-    BLECharacteristic* txChar;
-    BLECharacteristic* rxChar;
-
     // Connection state
     volatile bool connected;
+    volatile uint16_t connection_handle;
 
-    // MTU size (default 20 bytes for BLE)
-    uint16_t mtuSize;
+    // Notification state
+    volatile bool tx_notifications_enabled;
+
+    // ATT handles (set during initialization)
+    uint16_t att_tx_value_handle;
+    uint16_t att_rx_value_handle;
+
+    // Pending TX data
+    static const uint16_t TX_BUFFER_SIZE = 244;
+    uint8_t txBuffer[TX_BUFFER_SIZE];
+    volatile uint16_t txLength;
+    volatile bool txPending;
 
 public:
-    BLE_Transport() : rxHead(0), rxTail(0), connected(false), mtuSize(20) {
-        txChar = nullptr;
-        rxChar = nullptr;
-    }
+    BLE_Transport();
 
     /**
      * Initialize BLE with Nordic UART Service
      * @param deviceName BLE advertised name
      */
-    void begin(const char* deviceName = "Telemetrix4Pico2W") {
-        // Clear buffer
-        rxHead = 0;
-        rxTail = 0;
-
-        // Initialize BTstack
-        BTstack.setup();
-        BTstack.setBLEDeviceName(deviceName);
-
-        // Create Nordic UART Service
-        static BLEService uartService("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
-
-        // TX Characteristic (for sending data to client)
-        static BLECharacteristic txCharacteristic(
-            "6E400003-B5A3-F393-E0A9-E50E24DCCA9E",
-            ATT_PROPERTY_NOTIFY | ATT_PROPERTY_READ,
-            nullptr, 0
-        );
-        txChar = &txCharacteristic;
-
-        // RX Characteristic (for receiving data from client)
-        static BLECharacteristic rxCharacteristic(
-            "6E400002-B5A3-F393-E0A9-E50E24DCCA9E",
-            ATT_PROPERTY_WRITE | ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
-            nullptr, 0
-        );
-        rxChar = &rxCharacteristic;
-
-        // Set up RX callback using lambda
-        rxChar->setValueCallback([](BLECharacteristic* characteristic,
-                                     uint8_t* data, uint16_t size) {
-            // Access the singleton instance
-            extern BLE_Transport bleTransport;
-            bleTransport.onRxData(data, size);
-        });
-
-        // Set up connection callback
-        BTstack.setBLEConnectionCallback([](BLEStatus status,
-                                            BLEConnection* connection) {
-            extern BLE_Transport bleTransport;
-            bleTransport.onConnectionChange(status, connection);
-        });
-
-        // Add characteristics to service
-        uartService.addCharacteristic(txChar);
-        uartService.addCharacteristic(rxChar);
-
-        // Add service to BTstack
-        BTstack.addGATTService(&uartService);
-
-        // Start advertising
-        BTstack.startAdvertising();
-    }
+    void begin(const char* deviceName = "Tmx4Pico2W");
 
     /**
      * Update BLE stack (call in loop())
      */
-    void update() {
-        BTstack.loop();
-    }
+    void update();
 
     /**
      * Check if BLE is connected
@@ -114,128 +60,56 @@ public:
     /**
      * Check how many bytes are available to read
      */
-    int available() {
-        int count = 0;
-        if (rxHead >= rxTail) {
-            count = rxHead - rxTail;
-        } else {
-            count = BUFFER_SIZE - rxTail + rxHead;
-        }
-        return count;
-    }
+    int available();
 
     /**
      * Read one byte from buffer
      * @return byte value or -1 if no data available
      */
-    int read() {
-        if (rxHead == rxTail) {
-            return -1;
-        }
-
-        uint8_t data = rxBuffer[rxTail];
-        rxTail = (rxTail + 1) % BUFFER_SIZE;
-        return data;
-    }
+    int read();
 
     /**
      * Peek at next byte without removing it
      */
-    int peek() {
-        if (rxHead == rxTail) {
-            return -1;
-        }
-        return rxBuffer[rxTail];
-    }
+    int peek();
 
     /**
      * Write a single byte
      */
-    size_t write(uint8_t byte) {
-        return write(&byte, 1);
-    }
+    size_t write(uint8_t byte);
 
     /**
      * Write a buffer of bytes
      */
-    size_t write(const uint8_t* buffer, size_t size) {
-        if (!connected || txChar == nullptr) {
-            return 0;
-        }
-
-        size_t written = 0;
-
-        // Send in chunks based on MTU size
-        while (written < size) {
-            size_t chunkSize = min((size_t)mtuSize, size - written);
-
-            // Send notification
-            txChar->setValue(buffer + written, chunkSize);
-            txChar->notify();
-
-            written += chunkSize;
-
-            // Small delay between chunks to prevent overflow
-            if (written < size) {
-                delay(5);
-            }
-        }
-
-        return written;
-    }
+    size_t write(const uint8_t* buffer, size_t size);
 
     /**
      * Write a null-terminated string
      */
-    size_t print(const char* str) {
-        return write((const uint8_t*)str, strlen(str));
-    }
+    size_t print(const char* str);
 
     /**
      * Write a string with newline
      */
-    size_t println(const char* str) {
-        size_t n = print(str);
-        n += write('\r');
-        n += write('\n');
-        return n;
-    }
+    size_t println(const char* str);
 
     /**
      * Flush - no-op for BLE
      */
-    void flush() {
-        // BLE handles this automatically
-    }
+    void flush() {}
 
-    /**
-     * Callback when data is received
-     */
-    void onRxData(uint8_t* data, uint16_t size) {
-        for (uint16_t i = 0; i < size; i++) {
-            uint16_t nextHead = (rxHead + 1) % BUFFER_SIZE;
-            if (nextHead != rxTail) {
-                rxBuffer[rxHead] = data[i];
-                rxHead = nextHead;
-            }
-            // Note: silently drop data if buffer is full
-        }
-    }
+    // Public callbacks (called from C code)
+    void handleRxData(const uint8_t* data, uint16_t size);
+    void handleConnection(uint16_t conn_handle);
+    void handleDisconnection();
+    void handleTxNotificationsEnabled(bool enabled);
+    void handleCanSendNow();
 
-    /**
-     * Callback when connection state changes
-     */
-    void onConnectionChange(BLEStatus status, BLEConnection* connection) {
-        if (status == BLE_STATUS_OK) {
-            connected = connection->isConnected();
-
-            // Clear buffer on disconnect
-            if (!connected) {
-                rxHead = 0;
-                rxTail = 0;
-            }
-        }
-    }
+    // Get ATT handles
+    uint16_t getTxValueHandle() const { return att_tx_value_handle; }
+    uint16_t getRxValueHandle() const { return att_rx_value_handle; }
+    void setTxValueHandle(uint16_t handle) { att_tx_value_handle = handle; }
+    void setRxValueHandle(uint16_t handle) { att_rx_value_handle = handle; }
 };
 
 // Global instance
