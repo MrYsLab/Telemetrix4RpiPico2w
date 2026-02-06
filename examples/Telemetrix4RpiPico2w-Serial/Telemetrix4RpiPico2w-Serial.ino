@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2025 Alan Yorinks All rights reserved.
+  Copyright (c) 2025-2026 Alan Yorinks All rights reserved.
 
   This program is free software; you can redistribute it and/or
   modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -1846,6 +1846,7 @@ void run_steppers() {
 
 void setup() {
   Serial.begin(115200);
+  while (!Serial);
 
   pinMode(LED_BUILTIN, OUTPUT);
 

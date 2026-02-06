@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2020-2022 Alan Yorinks All rights reserved.
+  Copyright (c) 2022-2026 Alan Yorinks All rights reserved.
 
   This program is free software; you can redistribute it and/or
   modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -1875,6 +1875,7 @@ void run_steppers() {
 
 void setup() {
   Serial.begin(115200);
+  while (!Serial);
   WiFi.mode(WIFI_STA);
   WiFi.setHostname("Telemetrix_pico_w");
   WiFi.begin(ssid, password);
@@ -1884,7 +1885,7 @@ void setup() {
 
   // turn on LED
   digitalWrite(LED_BUILTIN, HIGH);
-
+  Serial.println("Remember to set the SSID and PASSWORD in the sketch");
   Serial.print("\n\nAllow 15 seconds for connection to complete..");
 
   while (WiFi.status() != WL_CONNECTED) {
