@@ -28,7 +28,10 @@
 #include <BLE.h>
 
 // *****************************************************************
-// You may rename the Pico 2W device by changing this value
+// You may rename your Pico 2W device by changing the defined value
+// below.
+// Make sure to set the ble_device_name parameter to this value when
+// invoking the client side of the application.
 // *****************************************************************
 
 #define PICO2W_ID "Tmx4Pico2W"
@@ -301,20 +304,20 @@ command_descriptor command_table[] = {
   { &stepper_set_max_speed },
   { &stepper_set_acceleration },
   { &stepper_set_speed },
-  (&stepper_set_current_position),
-  (&stepper_run_speed_to_position),
-  (&stepper_stop),
-  (&stepper_disable_outputs),
-  (&stepper_enable_outputs),
-  (&stepper_set_minimum_pulse_width),
-  (&stepper_set_enable_pin),
-  (&stepper_set_3_pins_inverted),
-  (&stepper_set_4_pins_inverted),
-  (&stepper_is_running),
-  (&stepper_get_current_position),
+  { &stepper_set_current_position },
+  { &stepper_run_speed_to_position },
+  { &stepper_stop },
+  { &stepper_disable_outputs },
+  { &stepper_enable_outputs },
+  { &stepper_set_minimum_pulse_width },
+  { &stepper_set_enable_pin },
+  { &stepper_set_3_pins_inverted },
+  { &stepper_set_4_pins_inverted },
+  { &stepper_is_running },
+  { &stepper_get_current_position },
   { &stepper_get_distance_to_go },
-  (&stepper_get_target_position),
-  (&reset_board),
+  { &stepper_get_target_position },
+  { &reset_board },
   { init_neo_pixels },
   { show_neo_pixels },
   { set_neo_pixel },
@@ -395,9 +398,6 @@ bool rebooting = false;
 #define REPORTING_ANALOG_DISABLE 3
 #define REPORTING_DIGITAL_DISABLE 4
 
-// init dht command offsets
-#define DHT_DATA_PIN 1
-
 // DHT Report sub-types
 #define DHT_DATA 0
 #define DHT_READ_ERROR 1
@@ -405,7 +405,7 @@ bool rebooting = false;
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 1
 #define FIRMWARE_MINOR 0
-#define TRANSPORT_TYPE 0  // this is fixed and should not be changes
+#define BUGFIX 0  // this is fixed and should not be changes
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*           Pin Related Defines And Data Structures                */
@@ -417,7 +417,7 @@ bool rebooting = false;
 // INPUT defined in Arduino.h = 0
 // OUTPUT defined in Arduino.h = 1
 // INPUT_PULLUP defined in Arduino.h = 2
-// The following are defined for arduino_telemetrix (AT)
+// The following are defined for telemetrix (AT)
 #define AT_ANALOG 4
 #define AT_MODE_NOT_SET 255
 
@@ -458,17 +458,17 @@ struct analog_pin_descriptor {
 // an array of analog_pin_descriptors
 analog_pin_descriptor the_analog_pins[MAX_ANALOG_PINS_SUPPORTED];
 
-unsigned long current_millis;   // for analog input loop
-unsigned long previous_millis;  // for analog input loop
-uint8_t analog_sampling_interval = 19;
+unsigned long current_millis;           // for analog input loop
+unsigned long previous_millis;          // for analog input loop
+uint8_t analog_sampling_interval = 19;  // in milliseconds
 
 // cpu temp comparison threshold
 float cpu_temp_threshold = 0.0;
 float cpu_temp_last_value = 0.0;
 bool monitor_cpu_temp = false;
-unsigned long cpu_temp_current_millis;   // for cpu temp loop
-unsigned long cpu_temp_previous_millis;  // for cpu temp loop
-uint16_t cpu_temp_sampling_interval = 1000;
+unsigned long cpu_temp_current_millis;       // for cpu temp loop
+unsigned long cpu_temp_previous_millis;      // for cpu temp loop
+uint16_t cpu_temp_sampling_interval = 1000;  // in milliseconds
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*  Feature Related Defines, Data Structures and Storage Allocation */
@@ -731,8 +731,7 @@ void reset_board() {
 // Return the firmware version number
 void get_firmware_version() {
   byte report_message[5] = { 4, FIRMWARE_REPORT, FIRMWARE_MAJOR, FIRMWARE_MINOR,
-                             TRANSPORT_TYPE };
-  //Serial.println("Firware report");
+                             BUGFIX };
   BLE_Uart.write(report_message, 5);
 }
 
@@ -1898,6 +1897,18 @@ void setup() {
   // set the range to be compatible with the non-wifi pico telemetrix library
   analogWriteRange(20000);
   init_pin_structures();
+  Serial.print("Telemetrix4RpiPico2w-BLE  Version ");
+
+  Serial.print(FIRMWARE_MAJOR);
+  Serial.print(".");
+  Serial.print(FIRMWARE_MINOR);
+  Serial.print(".");
+  Serial.println(BUGFIX);
+
+  Serial.print("Device MAC Address: ");
+  BLEAddress myMac;
+  myMac = BLE.address();
+  Serial.print(myMac.toString());
 }
 
 void loop() {

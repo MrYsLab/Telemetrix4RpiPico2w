@@ -411,8 +411,8 @@ bool rebooting = false;
 
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 1
-#define FIRMWARE_MINOR 0
-#define TRANSPORT_TYPE 0  // this is fixed and should not be changes
+#define FIRMWARE_MINOR 1
+#define BUGFIX 0  // this is fixed and should not be changes
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*           Pin Related Defines And Data Structures                */
@@ -482,6 +482,8 @@ uint16_t cpu_temp_sampling_interval = 1000;
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 // servo management
+#define MAX_SERVOS 14
+
 Servo servos[MAX_SERVOS];
 
 // this array allows us to retrieve the servo object
@@ -743,7 +745,7 @@ void reset_board() {
 // Return the firmware version number
 void get_firmware_version() {
   byte report_message[5] = { 4, FIRMWARE_REPORT, FIRMWARE_MAJOR, FIRMWARE_MINOR,
-                             TRANSPORT_TYPE };
+                             BUGFIX };
   client.write(report_message, 5);
 }
 
@@ -1894,6 +1896,14 @@ void setup() {
 
   // Turn off LED
   digitalWrite(LED_BUILTIN, LOW);
+
+  Serial.print("Telemetrix4RpiPico2w-WIFI  Version ");
+
+  Serial.print(FIRMWARE_MAJOR);
+  Serial.print(".");
+  Serial.print(FIRMWARE_MINOR);
+  Serial.print(".");
+  Serial.println(BUGFIX);
 
   Serial.print("Connected to WiFi. IP Address: ");
   Serial.print(WiFi.localIP());

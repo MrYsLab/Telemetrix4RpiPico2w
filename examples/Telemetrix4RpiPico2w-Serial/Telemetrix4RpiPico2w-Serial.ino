@@ -395,8 +395,8 @@ bool rebooting = false;
 
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 1
-#define FIRMWARE_MINOR 0
-#define TRANSPORT_TYPE 0  // this is fixed and should not be changes
+#define FIRMWARE_MINOR 1
+#define BUGFIX 0  // this is fixed and should not be changes
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /*           Pin Related Defines And Data Structures                */
@@ -466,6 +466,8 @@ uint16_t cpu_temp_sampling_interval = 1000;
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 // servo management
+#define MAX_SERVOS 14
+
 Servo servos[MAX_SERVOS];
 
 // this array allows us to retrieve the servo object
@@ -493,15 +495,13 @@ unsigned long sonar_current_millis;   // for analog input loop
 unsigned long sonar_previous_millis;  // for analog input loop
 
 uint8_t sonar_scan_interval = 33;  // Milliseconds between sensor pings
-// (29ms is about the min to avoid = 19;
+// 29ms is about the min
+
+// NeoPixel Management
+NeoPixelConnect *np; // pointer neopixel instance
 
 // DHT Management
 #define MAX_DHTS 2  // max number of devices
-// #define READ_FAILED_IN_SCANNER 0  // read request failed when scanning
-// #define READ_IN_FAILED_IN_SETUP 1 // read request failed when initially setting up
-
-NeoPixelConnect *np;
-
 
 struct DHT {
   uint8_t pin;
@@ -660,8 +660,6 @@ void set_pwm_range() {
 
 void get_cpu_temp() {
 
-  //byte b[4] = {0,0,0,0};
-
   memcpy(&cpu_temp_threshold, &command_buffer[0], sizeof(float));
 
   uint16_t cpu_temp_sampling_interval = (command_buffer[4] << 8) + command_buffer[5];
@@ -671,7 +669,7 @@ void get_cpu_temp() {
 
 
 
-// This method allows you modify what reports are generated.
+// This method allows you modify which reports are generated.
 // You can disable all reports, including dhts, and sonar.
 // You can disable only digital and analog reports on a
 // pin basis, or enable those on a pin basis.
@@ -723,7 +721,7 @@ void reset_board() {
 // Return the firmware version number
 void get_firmware_version() {
   byte report_message[5] = { 4, FIRMWARE_REPORT, FIRMWARE_MAJOR, FIRMWARE_MINOR,
-                             TRANSPORT_TYPE };
+                             BUGFIX };
   Serial.write(report_message, 5);
 }
 
@@ -742,7 +740,6 @@ int find_servo() {
       break;
     }
   }
-
   return index;
 }
 
@@ -773,7 +770,6 @@ void servo_write() {
   // find the servo object for the pin
   for (int i = 0; i < MAX_SERVOS; i++) {
     if (pin_to_servo_index_map[i] == pin) {
-
       servos[i].write(angle);
       return;
     }
@@ -787,7 +783,6 @@ void servo_detach() {
   // find the servo object for the pin
   for (int i = 0; i < MAX_SERVOS; i++) {
     if (pin_to_servo_index_map[i] == pin) {
-
       pin_to_servo_index_map[i] = -1;
       servos[i].detach();
     }
@@ -1880,6 +1875,13 @@ void setup() {
   // set the range to be compatible with the non-wifi pico telemetrix library
   analogWriteRange(20000);
   init_pin_structures();
+  Serial.print("Telemetrix4RpiPico2w-Serial  Version ");
+
+  Serial.print(FIRMWARE_MAJOR);
+  Serial.print(".");
+  Serial.print(FIRMWARE_MINOR);
+  Serial.print(".");
+  Serial.println(BUGFIX);
 }
 
 void loop() {
