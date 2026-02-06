@@ -1883,7 +1883,7 @@ void setup() {
   Serial.print(FIRMWARE_MINOR);
   Serial.print(".");
   Serial.println(BUGFIX);
-  Serial.println("Copyright (c) 2025-2026 Alan Yorinks All rights reserved.")
+  Serial.println("Copyright (c) 2025-2026 Alan Yorinks All rights reserved.");
 }
 
 void loop() {

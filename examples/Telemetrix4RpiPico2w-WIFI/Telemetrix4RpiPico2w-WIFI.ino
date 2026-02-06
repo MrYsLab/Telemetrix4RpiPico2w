@@ -1876,8 +1876,10 @@ void run_steppers() {
 void setup() {
   Serial.begin(115200);
   while (!Serial);
+  Serial.println("Remember to set the SSID and PASSWORD in the sketch");
+  Serial.print("\n\nAllow 15 seconds for connection to complete..");
   WiFi.mode(WIFI_STA);
-  WiFi.setHostname("Telemetrix_pico_w");
+  WiFi.setHostname("Telemetrix_pico_w2");
   WiFi.begin(ssid, password);
   delay(500);
 
@@ -1885,8 +1887,7 @@ void setup() {
 
   // turn on LED
   digitalWrite(LED_BUILTIN, HIGH);
-  Serial.println("Remember to set the SSID and PASSWORD in the sketch");
-  Serial.print("\n\nAllow 15 seconds for connection to complete..");
+
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -1905,7 +1906,7 @@ void setup() {
   Serial.print(FIRMWARE_MINOR);
   Serial.print(".");
   Serial.println(BUGFIX);
-  Serial.println("Copyright (c) 2022-2026 Alan Yorinks All rights reserved.")
+  Serial.println("Copyright (c) 2022-2026 Alan Yorinks All rights reserved.");
 
   Serial.print("Connected to WiFi. IP Address: ");
   Serial.print(WiFi.localIP());
