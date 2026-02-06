@@ -1889,7 +1889,7 @@ void setup() {
   Serial.print("\n\nAllow 15 seconds for connection to complete..");
 
   while (WiFi.status() != WL_CONNECTED) {
-    delay(100);
+    delay(1000);
     Serial.print(".");
   }
 
@@ -1905,6 +1905,7 @@ void setup() {
   Serial.print(FIRMWARE_MINOR);
   Serial.print(".");
   Serial.println(BUGFIX);
+  Serial.println("Copyright (c) 2022-2026 Alan Yorinks All rights reserved.")
 
   Serial.print("Connected to WiFi. IP Address: ");
   Serial.print(WiFi.localIP());
