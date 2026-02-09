@@ -1846,7 +1846,7 @@ void run_steppers() {
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(50);
 
   pinMode(LED_BUILTIN, OUTPUT);
 
