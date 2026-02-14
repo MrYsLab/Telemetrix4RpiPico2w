@@ -1861,6 +1861,8 @@ void run_steppers() {
 
 void setup() {
   Serial.begin(115200);
+  delay(50);
+
 
   // delay(5000);
   BLE.begin(PICO2W_ID);
@@ -1869,27 +1871,7 @@ void setup() {
   BLE.startAdvertising();
   BLE_Uart.setAutoflush(50);
 
-  pinMode(LED_BUILTIN, OUTPUT);
 
-  // turn on LED
-  digitalWrite(LED_BUILTIN, HIGH);
-
-  delay(.5);
-
-  // Turn off LED
-  digitalWrite(LED_BUILTIN, LOW);
-
-  delay(.5);
-
-  // turn on LED
-  digitalWrite(LED_BUILTIN, HIGH);
-
-  delay(.5);
-
-  // Turn off LED
-  digitalWrite(LED_BUILTIN, LOW);
-
-  delay(.5);
 
   for (int i = 0; i < MAX_NUMBER_OF_STEPPERS; i++) {
     stepper_run_modes[i] = STEPPER_STOP;
@@ -1904,6 +1886,25 @@ void setup() {
   Serial.print(FIRMWARE_MINOR);
   Serial.print(".");
   Serial.println(BUGFIX);
+
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  // turn on LED
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(250);
+
+  // Turn off LED
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(250);
+
+  // turn on LED
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(250);
+
+  // Turn off LED
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(250);
+
   Serial.println("Copyright (c) 2026 Alan Yorinks All rights reserved.");
 
   Serial.print("Device MAC Address: ");

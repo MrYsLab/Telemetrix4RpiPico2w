@@ -28,7 +28,7 @@
 #include <NeoPixelConnect.h>
 
 // Modify the next two lines to match your network values
-const char *ssid = "YOUR_SSID";
+const char *ssid = "SSID";
 const char *password = "YOUR_PASSWORD";
 
 // Default ip port value.
@@ -1875,19 +1875,27 @@ void run_steppers() {
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial);
-  Serial.println("Remember to set the SSID and PASSWORD in the sketch");
-  Serial.print("\n\nAllow 15 seconds for connection to complete..");
-  WiFi.mode(WIFI_STA);
-  WiFi.setHostname("Telemetrix_pico_w2");
-  WiFi.begin(ssid, password);
-  delay(500);
+  delay(1500);
 
   pinMode(LED_BUILTIN, OUTPUT);
 
   // turn on LED
   digitalWrite(LED_BUILTIN, HIGH);
 
+  Serial.print("Telemetrix4RpiPico2w-WIFI  Version ");
+
+  Serial.print(FIRMWARE_MAJOR);
+  Serial.print(".");
+  Serial.print(FIRMWARE_MINOR);
+  Serial.print(".");
+  Serial.println(BUGFIX);
+  Serial.println("Copyright (c) 2022-2026 Alan Yorinks All rights reserved.");
+
+  Serial.println("Remember to set the SSID and PASSWORD in the sketch");
+  Serial.print("\n\nAllow 15 seconds for connection to complete..");
+  WiFi.mode(WIFI_STA);
+  WiFi.setHostname("Telemetrix_pico_w2");
+  WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -1899,14 +1907,7 @@ void setup() {
   // Turn off LED
   digitalWrite(LED_BUILTIN, LOW);
 
-  Serial.print("Telemetrix4RpiPico2w-WIFI  Version ");
 
-  Serial.print(FIRMWARE_MAJOR);
-  Serial.print(".");
-  Serial.print(FIRMWARE_MINOR);
-  Serial.print(".");
-  Serial.println(BUGFIX);
-  Serial.println("Copyright (c) 2022-2026 Alan Yorinks All rights reserved.");
 
   Serial.print("Connected to WiFi. IP Address: ");
   Serial.print(WiFi.localIP());

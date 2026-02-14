@@ -498,7 +498,7 @@ uint8_t sonar_scan_interval = 33;  // Milliseconds between sensor pings
 // 29ms is about the min
 
 // NeoPixel Management
-NeoPixelConnect *np; // pointer neopixel instance
+NeoPixelConnect *np;  // pointer neopixel instance
 
 // DHT Management
 #define MAX_DHTS 2  // max number of devices
@@ -1847,36 +1847,8 @@ void run_steppers() {
 void setup() {
   Serial.begin(115200);
 
-  delay(50);
+  delay(1500);
 
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  // turn on LED
-  digitalWrite(LED_BUILTIN, HIGH);
-
-  delay(.5);
-
-  // Turn off LED
-  digitalWrite(LED_BUILTIN, LOW);
-
-  delay(.5);
-
-  // turn on LED
-  digitalWrite(LED_BUILTIN, HIGH);
-
-  delay(.5);
-
-  // Turn off LED
-  digitalWrite(LED_BUILTIN, LOW);
-
-  delay(.5);
-
-  for (int i = 0; i < MAX_NUMBER_OF_STEPPERS; i++) {
-    stepper_run_modes[i] = STEPPER_STOP;
-  }
-  // set the range to be compatible with the non-wifi pico telemetrix library
-  analogWriteRange(20000);
-  init_pin_structures();
   Serial.print("Telemetrix4RpiPico2w-Serial  Version ");
 
   Serial.print(FIRMWARE_MAJOR);
@@ -1885,6 +1857,35 @@ void setup() {
   Serial.print(".");
   Serial.println(BUGFIX);
   Serial.println("Copyright (c) 2025-2026 Alan Yorinks All rights reserved.");
+
+  for (int i = 0; i < MAX_NUMBER_OF_STEPPERS; i++) {
+    stepper_run_modes[i] = STEPPER_STOP;
+  }
+  // set the range to be compatible with the non-wifi pico telemetrix library
+  analogWriteRange(20000);
+  init_pin_structures();
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  // turn on LED
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  delay(250);
+
+  // Turn off LED
+  digitalWrite(LED_BUILTIN, LOW);
+
+  delay(250);
+
+  //turn on LED
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  delay(250);
+
+  // Turn off LED
+  digitalWrite(LED_BUILTIN, LOW);
+
+  delay(250);
+  Serial.println("Ready");
 }
 
 void loop() {
